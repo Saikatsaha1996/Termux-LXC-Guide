@@ -117,9 +117,9 @@ required_configuration='#Type Path       Mode User Group Age Argument
 c!     /dev/cuse  0666 root root  -   10:203
 c!     /dev/fuse  0666 root root  -   10:229
 c!     /dev/ashmem  0666 root root  -   10:58
-# d!     /dev/dri  0755 root root  -   -
-# c!     /dev/dri/card0  0666 root root  -   226:0
-# c!     /dev/dri/renderD128  0666 root root  -   226:128
+d!     /dev/dri  0755 root root  -   -
+c!     /dev/dri/card0  0666 root root  -   226:0
+c!     /dev/dri/renderD128  0666 root root  -   226:128
 c!     /dev/loop-control  0600 root root  -   10:237'
 echo "${required_configuration}" > "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
 
