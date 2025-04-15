@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/env sh
 
 # Some necessary environment variables
-GITHUB_URL="https://github.com/George-Seven/Termux-LXC-Guide"
+GITHUB_URL="https://github.com/Saikatsaha1996/Termux-LXC-Guide"
 export HOME="/data/data/com.termux/files/home"
 GITHUB_DIR="${HOME}/$(basename "${GITHUB_URL}")"
 DEPENDENCIES="lxc tsu nano mount-utils pulseaudio termux-tools dos2unix curl git iptables dnsmasq"
