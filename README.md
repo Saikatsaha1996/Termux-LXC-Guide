@@ -29,7 +29,7 @@ https://github.com/lxc/lxc
 In Termux -
 
 ```
-git clone --depth 1 https://github.com/George-Seven/Termux-LXC-Guide ~/Termux-LXC-Guide
+git clone --depth 1 https://github.com/Saikatsaha1996/Termux-LXC-Guide ~/Termux-LXC-Guide
 ```
 ```
 bash ~/Termux-LXC-Guide/setup-termux-lxc.sh
