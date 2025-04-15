@@ -8,20 +8,44 @@ CONFIG_BASENAME="$(basename "${CONFIG_PATH}")"
 
 # This will do a bunch of important things -
 # Mount the required cgroups
+#if ! mountpoint -q /sys/fs/cgroup 2>/dev/null >/dev/null; then
+#  mkdir -p /sys/fs/cgroup
+#  mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime cgroup_root /sys/fs/cgroup
+#fi
+
+#for cg in blkio cpu cpuacct cpuset devices freezer memory pids; do
+#  if ! mountpoint -q "/sys/fs/cgroup/${cg}" 2>/dev/null >/dev/null; then
+#    mkdir -p "/sys/fs/cgroup/${cg}"
+#    mount -t cgroup -o "rw,nosuid,nodev,noexec,relatime,${cg}" "${cg}" "/sys/fs/cgroup/${cg}" 2>/dev/null >/dev/null
+#  fi
+#done
+
+#mkdir -p /sys/fs/cgroup/systemd
+#mount -t cgroup -o none,name=systemd systemd /sys/fs/cgroup/systemd 2>/dev/null >/dev/null
+#umount -Rl /sys/fs/cgroup/cg2_bpf 2>/dev/null >/dev/null
+#umount -Rl /sys/fs/cgroup/schedtune 2>/dev/null >/dev/null
+#umount -Rl "${LXC_ROOTFS_PATH}" 2>/dev/null >/dev/null
+
+# Mount the cgroup2 root if not already mounted
 if ! mountpoint -q /sys/fs/cgroup 2>/dev/null >/dev/null; then
   mkdir -p /sys/fs/cgroup
-  mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime cgroup_root /sys/fs/cgroup
+  mount -t cgroup2 -o rw,nosuid,nodev,noexec,relatime cgroup2 /sys/fs/cgroup
 fi
 
-for cg in blkio cpu cpuacct cpuset devices freezer memory pids; do
-  if ! mountpoint -q "/sys/fs/cgroup/${cg}" 2>/dev/null >/dev/null; then
-    mkdir -p "/sys/fs/cgroup/${cg}"
-    mount -t cgroup -o "rw,nosuid,nodev,noexec,relatime,${cg}" "${cg}" "/sys/fs/cgroup/${cg}" 2>/dev/null >/dev/null
-  fi
-done
+#for cg in blkio cpu cpuacct cpuset devices freezer memory pids systemd; do
+#  mkdir -p "/sys/fs/cgroup/${cg}"
+#done
 
-mkdir -p /sys/fs/cgroup/systemd
-mount -t cgroup -o none,name=systemd systemd /sys/fs/cgroup/systemd 2>/dev/null >/dev/null
+# Optional: Clean up legacy cgroup1 mounts if present
+umount -Rl /sys/fs/cgroup/blkio 2>/dev/null >/dev/null
+umount -Rl /sys/fs/cgroup/cpu 2>/dev/null >/dev/null
+umount -Rl /sys/fs/cgroup/cpuacct 2>/dev/null >/dev/null
+umount -Rl /sys/fs/cgroup/cpuset 2>/dev/null >/dev/null
+umount -Rl /sys/fs/cgroup/devices 2>/dev/null >/dev/null
+umount -Rl /sys/fs/cgroup/freezer 2>/dev/null >/dev/null
+umount -Rl /sys/fs/cgroup/memory 2>/dev/null >/dev/null
+umount -Rl /sys/fs/cgroup/pids 2>/dev/null >/dev/null
+umount -Rl /sys/fs/cgroup/systemd 2>/dev/null >/dev/null
 umount -Rl /sys/fs/cgroup/cg2_bpf 2>/dev/null >/dev/null
 umount -Rl /sys/fs/cgroup/schedtune 2>/dev/null >/dev/null
 umount -Rl "${LXC_ROOTFS_PATH}" 2>/dev/null >/dev/null
