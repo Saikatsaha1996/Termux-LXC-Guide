@@ -20,6 +20,11 @@ for cg in blkio cpu cpuacct cpuset devices freezer memory pids; do
   fi
 done
 
+# Mount binfmt_misc support
+if [ ! -f /proc/sys/fs/binfmt_misc/register ]; then
+  mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
+fi
+
 mkdir -p /sys/fs/cgroup/systemd
 mount -t cgroup -o none,name=systemd systemd /sys/fs/cgroup/systemd 2>/dev/null >/dev/null
 umount -Rl /sys/fs/cgroup/cg2_bpf 2>/dev/null >/dev/null
@@ -114,13 +119,14 @@ ln -nsf /usr/sbin/ip6tables-legacy "${LXC_ROOTFS_PATH}/usr/sbin/ip6tables"
 # Sets up container internals
 mkdir -p "${LXC_ROOTFS_PATH}/etc/tmpfiles.d"
 required_configuration='#Type Path       Mode User Group Age Argument
-c!     /dev/cuse  0666 root root  -   10:203
-c!     /dev/fuse  0666 root root  -   10:229
-c!     /dev/ashmem  0666 root root  -   10:58
-d!     /dev/dri  0755 root root  -   -
-c!     /dev/dri/card0  0666 root root  -   226:0
-c!     /dev/dri/renderD128  0666 root root  -   226:128
-c!     /dev/loop-control  0600 root root  -   10:237'
+c!     /dev/fuse  0600 root root  -  10:229
+c!     /dev/ashmem  0666 root root  -  10:58
+d!     /dev/dri  0755 root root  -  -
+c!     /dev/dri/card0  0666 root graphics  -  226:0
+c!     /dev/dri/renderD128  0666 root graphics  -  226:128
+c!     /dev/kgsl-3d0  660 system system  -  505:0
+c!     /dev/ion  660 system system  -  10:127
+c!     /dev/loop-control  0600 root root  -  10:237'
 echo "${required_configuration}" > "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
 
 for i in $(seq -s " " 0 255); do
