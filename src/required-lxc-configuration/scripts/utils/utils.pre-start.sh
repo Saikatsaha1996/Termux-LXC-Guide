@@ -13,6 +13,10 @@ if ! mountpoint -q /sys/fs/cgroup 2>/dev/null >/dev/null; then
   mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime cgroup_root /sys/fs/cgroup
 fi
 
+if [ ! -f /proc/sys/fs/binfmt_misc/register ]; then
+  mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
+fi
+
 for cg in blkio cpu cpuacct cpuset devices freezer memory pids; do
   if ! mountpoint -q "/sys/fs/cgroup/${cg}" 2>/dev/null >/dev/null; then
     mkdir -p "/sys/fs/cgroup/${cg}"
