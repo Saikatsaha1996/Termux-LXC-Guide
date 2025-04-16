@@ -20,11 +20,6 @@ for cg in blkio cpu cpuacct cpuset devices freezer memory pids; do
   fi
 done
 
-# Mount binfmt_misc support
-if [ ! -f /proc/sys/fs/binfmt_misc/register ]; then
-  mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
-fi
-
 mkdir -p /sys/fs/cgroup/systemd
 mount -t cgroup -o none,name=systemd systemd /sys/fs/cgroup/systemd 2>/dev/null >/dev/null
 umount -Rl /sys/fs/cgroup/cg2_bpf 2>/dev/null >/dev/null
