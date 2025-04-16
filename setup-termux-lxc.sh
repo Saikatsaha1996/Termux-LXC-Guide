@@ -53,18 +53,11 @@ lxc.net.0.hwaddr = 00:17:3e:xx:xx:xx
 lxc.hook.version = 1
 lxc.tty.max = 10
 lxc.environment = TERM
-lxc.cgroup.devices.allow = a
+lxc.init.cmd = /sbin/init systemd.unified_cgroup_hierarchy=1
 lxc.mount.auto = cgroup:mixed sys:mixed proc:mixed
-lxc.mount.entry = /data/data/com.termux/files/usr/tmp tmp none bind,realtime,optional
-#lxc.mount.entry = /dev/kgsl-3d0 dev/kgsl-3d0 none bind,optional,create=file
-#lxc.mount.entry = /dev/ion dev/ion none bind,optional,create=file
-#lxc.mount.entry = /dev/dri dev/dri none bind,optional,create=dir
-#lxc.mount.entry = /dev/snd dev/snd none bind,optional,create=dir
+lxc.mount.entry = /data/data/com.termux/files/usr/tmp tmp none bind,realtime,optional 0 0
 lxc.hook.pre-start = "'${GITHUB_DIR}'/src/required-lxc-configuration/scripts/utils/utils.pre-start.sh"
 lxc.hook.post-stop = "'${GITHUB_DIR}'/src/required-lxc-configuration/scripts/utils/utils.post-stop.sh"
-
-# Uncomment "lxc.cgroup.memory.limit_in_bytes" to limit max RAM usage allowed for the container (remove the #)
-# lxc.cgroup.memory.limit_in_bytes = 3G'
 
 echo "${required_configuration}" > "${PREFIX}/etc/lxc/default.conf"
 sudo chown "${SUDO_USER}:${SUDO_USER}" "${PREFIX}/etc/lxc/default.conf"
