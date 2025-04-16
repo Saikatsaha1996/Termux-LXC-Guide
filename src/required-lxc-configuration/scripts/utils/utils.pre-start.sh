@@ -121,6 +121,7 @@ mkdir -p "${LXC_ROOTFS_PATH}/etc/tmpfiles.d"
 required_configuration='#Type Path       Mode User Group Age Argument
 c!     /dev/fuse  0600 root root  -  10:229
 c!     /dev/ashmem  0666 root root  -  10:58
+d!     /dev/snd  0755 root root  -  -
 d!     /dev/dri  0755 root root  -  -
 c!     /dev/dri/card0  0666 root graphics  -  226:0
 c!     /dev/dri/renderD128  0666 root graphics  -  226:128
