@@ -10,25 +10,25 @@ CONFIG_BASENAME="$(basename "${CONFIG_PATH}")"
 # Mount the required cgroups
 if ! mountpoint -q /sys/fs/cgroup 2>/dev/null >/dev/null; then
   mkdir -p /sys/fs/cgroup
-  mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime cgroup_root /sys/fs/cgroup
+  mount -t cgroup2 -o rw,nosuid,nodev,noexec,relatime cgroup2 /sys/fs/cgroup
 fi
 
 if [ ! -f /proc/sys/fs/binfmt_misc/register ]; then
   mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
 fi
 
-for cg in blkio cpu cpuacct cpuset devices freezer memory pids; do
-  if ! mountpoint -q "/sys/fs/cgroup/${cg}" 2>/dev/null >/dev/null; then
-    mkdir -p "/sys/fs/cgroup/${cg}"
-    mount -t cgroup -o "rw,nosuid,nodev,noexec,relatime,${cg}" "${cg}" "/sys/fs/cgroup/${cg}" 2>/dev/null >/dev/null
-  fi
-done
+#for cg in blkio cpu cpuacct cpuset devices freezer memory pids; do
+#  if ! mountpoint -q "/sys/fs/cgroup/${cg}" 2>/dev/null >/dev/null; then
+#    mkdir -p "/sys/fs/cgroup/${cg}"
+#    mount -t cgroup -o "rw,nosuid,nodev,noexec,relatime,${cg}" "${cg}" "/sys/fs/cgroup/${cg}" 2>/dev/null >/dev/null
+#  fi
+#done
 
-mkdir -p /sys/fs/cgroup/systemd
-mount -t cgroup -o none,name=systemd systemd /sys/fs/cgroup/systemd 2>/dev/null >/dev/null
-umount -Rl /sys/fs/cgroup/cg2_bpf 2>/dev/null >/dev/null
-umount -Rl /sys/fs/cgroup/schedtune 2>/dev/null >/dev/null
-umount -Rl "${LXC_ROOTFS_PATH}" 2>/dev/null >/dev/null
+#mkdir -p /sys/fs/cgroup/systemd
+#mount -t cgroup -o none,name=systemd systemd /sys/fs/cgroup/systemd 2>/dev/null >/dev/null
+#umount -Rl /sys/fs/cgroup/cg2_bpf 2>/dev/null >/dev/null
+#umount -Rl /sys/fs/cgroup/schedtune 2>/dev/null >/dev/null
+#umount -Rl "${LXC_ROOTFS_PATH}" 2>/dev/null >/dev/null
 
 # Sets correct DNS resolver to fix connectivity
 sed -i -E 's/^( *#* *)?DNS=.*/DNS=1.1.1.1/g' "${LXC_ROOTFS_PATH}/etc/systemd/resolved.conf"
