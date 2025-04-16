@@ -55,6 +55,10 @@ lxc.tty.max = 10
 lxc.environment = TERM
 lxc.cgroup.devices.allow = a
 lxc.mount.auto = cgroup:mixed sys:mixed proc:mixed
+lxc.mount.entry = /dev/kgsl-3d0 dev/kgsl-3d0 none bind,optional,create=file
+lxc.mount.entry = /dev/ion dev/ion none bind,optional,create=file
+lxc.mount.entry = /dev/dri dev/dri none bind,optional,create=dir
+lxc.mount.entry = /dev/snd dev/snd none bind,optional,create=dir
 lxc.hook.pre-start = "'${GITHUB_DIR}'/src/required-lxc-configuration/scripts/utils/utils.pre-start.sh"
 lxc.hook.post-stop = "'${GITHUB_DIR}'/src/required-lxc-configuration/scripts/utils/utils.post-stop.sh"
 
