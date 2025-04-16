@@ -55,6 +55,7 @@ lxc.tty.max = 10
 lxc.environment = TERM
 lxc.cgroup.devices.allow = a
 lxc.mount.auto = cgroup:mixed sys:mixed proc:mixed
+lxc.mount.entry = /data/data/com.termux/files/usr/tmp tmp none bind,realtime,optional
 lxc.mount.entry = /dev/kgsl-3d0 dev/kgsl-3d0 none bind,optional,create=file
 lxc.mount.entry = /dev/ion dev/ion none bind,optional,create=file
 lxc.mount.entry = /dev/dri dev/dri none bind,optional,create=dir
