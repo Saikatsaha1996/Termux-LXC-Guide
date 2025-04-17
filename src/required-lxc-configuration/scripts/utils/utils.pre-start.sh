@@ -8,10 +8,10 @@ CONFIG_BASENAME="$(basename "${CONFIG_PATH}")"
 
 # This will do a bunch of important things -
 # Mount the required cgroups
-if ! mountpoint -q /sys/fs/cgroup 2>/dev/null >/dev/null; then
-  mkdir -p /sys/fs/cgroup
-  mount -t cgroup2 -o rw,nosuid,nodev,noexec,relatime cgroup2 /sys/fs/cgroup
-fi
+#if ! mountpoint -q /sys/fs/cgroup 2>/dev/null >/dev/null; then
+#  mkdir -p /sys/fs/cgroup
+#  mount -t cgroup2 -o rw,nosuid,nodev,noexec,relatime cgroup2 /sys/fs/cgroup
+#fi
 
 if [ ! -f /proc/sys/fs/binfmt_misc/register ]; then
   mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
