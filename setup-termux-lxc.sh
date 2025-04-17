@@ -58,7 +58,8 @@ lxc.mount.auto = cgroup:mixed sys:mixed proc:mixed
 lxc.mount.entry = /data/data/com.termux/files/usr/tmp tmp none bind,realtime,optional 0 0
 lxc.hook.pre-start = "'${GITHUB_DIR}'/src/required-lxc-configuration/scripts/utils/utils.pre-start.sh"
 lxc.hook.post-stop = "'${GITHUB_DIR}'/src/required-lxc-configuration/scripts/utils/utils.post-stop.sh"
-
+# Uncomment "lxc.cgroup.memory.limit_in_bytes" to limit max RAM usage allowed for the container (remove the #)
+# lxc.cgroup.memory.limit_in_bytes = 3G'
 echo "${required_configuration}" > "${PREFIX}/etc/lxc/default.conf"
 sudo chown "${SUDO_USER}:${SUDO_USER}" "${PREFIX}/etc/lxc/default.conf"
 sudo chgrp "${SUDO_USER}" "${PREFIX}/etc/lxc/default.conf"
@@ -72,7 +73,7 @@ echo "
  If you haven't created a container yet, you can
  create a new Ubuntu container using this command -
 
-  sudo lxc-create -t download -n ubuntu -- --no-validate -d ubuntu -r jammy -a arm64
+  sudo lxc-create -t download -n ubuntu -- --no-validate -d ubuntu -r noble -a arm64
 
 
  You can login to the container using -
