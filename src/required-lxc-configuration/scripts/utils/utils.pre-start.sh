@@ -8,27 +8,27 @@ CONFIG_BASENAME="$(basename "${CONFIG_PATH}")"
 
 # This will do a bunch of important things -
 # Mount the required cgroups
-#if ! mountpoint -q /sys/fs/cgroup 2>/dev/null >/dev/null; then
-#  mkdir -p /sys/fs/cgroup
-#  mount -t cgroup2 -o rw,nosuid,nodev,noexec,relatime cgroup2 /sys/fs/cgroup
-#fi
+if ! mountpoint -q /sys/fs/cgroup 2>/dev/null >/dev/null; then
+  mkdir -p /sys/fs/cgroup
+  mount -t cgroup2 -o rw,nosuid,nodev,noexec,relatime cgroup2 /sys/fs/cgroup
+fi
 
 if [ ! -f /proc/sys/fs/binfmt_misc/register ]; then
   mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
 fi
 
-#for cg in blkio cpu cpuacct cpuset devices freezer memory pids; do
-#  if ! mountpoint -q "/sys/fs/cgroup/${cg}" 2>/dev/null >/dev/null; then
-#    mkdir -p "/sys/fs/cgroup/${cg}"
-#    mount -t cgroup -o "rw,nosuid,nodev,noexec,relatime,${cg}" "${cg}" "/sys/fs/cgroup/${cg}" 2>/dev/null >/dev/null
-#  fi
-#done
+for cg in blkio cpu cpuacct cpuset devices freezer memory pids; do
+  if ! mountpoint -q "/sys/fs/cgroup/${cg}" 2>/dev/null >/dev/null; then
+    mkdir -p "/sys/fs/cgroup/${cg}"
+    mount -t cgroup -o "rw,nosuid,nodev,noexec,relatime,${cg}" "${cg}" "/sys/fs/cgroup/${cg}" 2>/dev/null >/dev/null
+  fi
+done
 
-#mkdir -p /sys/fs/cgroup/systemd
-#mount -t cgroup -o none,name=systemd systemd /sys/fs/cgroup/systemd 2>/dev/null >/dev/null
-#umount -Rl /sys/fs/cgroup/cg2_bpf 2>/dev/null >/dev/null
-#umount -Rl /sys/fs/cgroup/schedtune 2>/dev/null >/dev/null
-#umount -Rl "${LXC_ROOTFS_PATH}" 2>/dev/null >/dev/null
+mkdir -p /sys/fs/cgroup/systemd
+mount -t cgroup -o none,name=systemd systemd /sys/fs/cgroup/systemd 2>/dev/null >/dev/null
+umount -Rl /sys/fs/cgroup/cg2_bpf 2>/dev/null >/dev/null
+umount -Rl /sys/fs/cgroup/schedtune 2>/dev/null >/dev/null
+umount -Rl "${LXC_ROOTFS_PATH}" 2>/dev/null >/dev/null
 
 # Sets correct DNS resolver to fix connectivity
 sed -i -E 's/^( *#* *)?DNS=.*/DNS=1.1.1.1/g' "${LXC_ROOTFS_PATH}/etc/systemd/resolved.conf"
@@ -120,12 +120,12 @@ mkdir -p "${LXC_ROOTFS_PATH}/etc/tmpfiles.d"
 required_configuration='#Type Path       Mode User Group Age Argument
 c!     /dev/fuse  0600 root root  -  10:229
 c!     /dev/ashmem  0666 root root  -  10:58
-d!     /dev/snd  0755 root root  -  -
-d!     /dev/dri  0755 root root  -  -
-c!     /dev/dri/card0  0666 root graphics  -  226:0
-c!     /dev/dri/renderD128  0666 root graphics  -  226:128
-c!     /dev/kgsl-3d0  660 system system  -  505:0
-c!     /dev/ion  660 system system  -  10:127
+#d!     /dev/snd  0755 root root  -  -
+#d!     /dev/dri  0755 root root  -  -
+#c!     /dev/dri/card0  0666 root graphics  -  226:0
+#c!     /dev/dri/renderD128  0666 root graphics  -  226:128
+#c!     /dev/kgsl-3d0  660 system system  -  505:0
+#c!     /dev/ion  660 system system  -  10:127
 c!     /dev/loop-control  0600 root root  -  10:237'
 echo "${required_configuration}" > "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
 
