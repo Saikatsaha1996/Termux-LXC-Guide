@@ -55,7 +55,19 @@ lxc.tty.max = 10
 lxc.environment = TERM
 lxc.init.cmd = /sbin/init systemd.unified_cgroup_hierarchy=0
 lxc.mount.auto = cgroup:mixed sys:mixed proc:mixed
+# Mount /dev/snd
+lxc.mount.entry = /dev/snd dev/snd none bind,optional,create=dir 0 0
+# Mount /dev/dri
+lxc.mount.entry = /dev/dri dev/dri none bind,optional,create=dir 0 0
+# Specific devices (if needed)
+lxc.mount.entry = /dev/dri/card0 dev/dri/card0 none bind,optional,create=file 0 0
+lxc.mount.entry = /dev/dri/renderD128 dev/dri/renderD128 none bind,optional,create=file 0 0
+lxc.mount.entry = /dev/kgsl-3d0 dev/kgsl-3d0 none bind,optional,create=file 0 0
+lxc.mount.entry = /dev/ion dev/ion none bind,optional,create=file 0 0
 lxc.mount.entry = /data/data/com.termux/files/usr/tmp tmp none bind,realtime,optional 0 0
+# Mount binfmt_misc
+lxc.mount.entry = /proc/sys/fs/binfmt_misc proc/sys/fs/binfmt_misc none bind,optional,create=dir 0 0
+
 lxc.hook.pre-start = "'${GITHUB_DIR}'/src/required-lxc-configuration/scripts/utils/utils.pre-start.sh"
 lxc.hook.post-stop = "'${GITHUB_DIR}'/src/required-lxc-configuration/scripts/utils/utils.post-stop.sh"
 # Uncomment "lxc.cgroup.memory.limit_in_bytes" to limit max RAM usage allowed for the container (remove the #)
