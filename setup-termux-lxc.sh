@@ -53,7 +53,7 @@ lxc.net.0.hwaddr = 00:17:3e:xx:xx:xx
 lxc.hook.version = 1
 lxc.tty.max = 10
 lxc.environment = TERM
-lxc.init.cmd = /sbin/init systemd.unified_cgroup_hierarchy=1
+lxc.init.cmd = /sbin/init systemd.unified_cgroup_hierarchy=0
 lxc.mount.auto = cgroup:mixed sys:mixed proc:mixed
 lxc.mount.entry = /data/data/com.termux/files/usr/tmp tmp none bind,realtime,optional 0 0
 lxc.hook.pre-start = "'${GITHUB_DIR}'/src/required-lxc-configuration/scripts/utils/utils.pre-start.sh"
