@@ -61,6 +61,8 @@ lxc.mount.auto = cgroup:mixed sys:mixed proc:mixed
 lxc.mount.entry = /dev/snd dev/snd none bind,optional,create=dir 0 0
 # Mount /dev/dri
 lxc.mount.entry = /dev/dri dev/dri none bind,optional,create=dir 0 0
+# Mount /sdcard
+lxc.mount.entry = /sdcard sdcard none bind,optional,create=dir 0 0
 # Specific devices (if needed)
 lxc.mount.entry = /dev/dri/card0 dev/dri/card0 none bind,optional,create=file 0 0
 lxc.mount.entry = /dev/dri/renderD128 dev/dri/renderD128 none bind,optional,create=file 0 0
