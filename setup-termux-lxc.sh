@@ -53,8 +53,8 @@ lxc.net.0.hwaddr = 00:17:3e:xx:xx:xx
 lxc.hook.version = 1
 lxc.tty.max = 10
 lxc.environment = TERM
-lxc.cgroup.devices.allow =
-lxc.cgroup.devices.deny =
+lxc.cgroup.devices.allow = a
+#lxc.cgroup.devices.deny =
 lxc.init.cmd = /sbin/init systemd.unified_cgroup_hierarchy=0
 lxc.mount.auto = cgroup:mixed sys:mixed proc:mixed
 # Mount /dev/snd
