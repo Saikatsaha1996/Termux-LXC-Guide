@@ -72,6 +72,29 @@ lxc.mount.entry = /data/data/com.termux/files/usr/tmp tmp none bind,realtime,opt
 # Mount binfmt_misc
 lxc.mount.entry = /proc/sys/fs/binfmt_misc proc/sys/fs/binfmt_misc none bind,optional,create=dir 0 0
 
+lxc.mount.entry = /vendor vendor none bind,optional,rw,create=dir
+lxc.mount.entry = /vendor_dlkm vendor_dlkm none bind,optional,rw,create=dir
+lxc.mount.entry = /system system none bind,optional,rw,create=dir
+lxc.mount.entry = /system_dlkm system_dlkm none bind,optional,rw,create=dir
+lxc.mount.entry = /system_ext system_ext none bind,optional,rw,create=dir
+lxc.mount.entry = /product product none bind,optional,rw,create=dir
+lxc.mount.entry = /odm odm none bind,optional,rw,create=dir
+lxc.mount.entry = /odm_dlkm odm_dlkm none bind,optional,rw,create=dir
+lxc.mount.entry = /apex apex none rbind,optional,rw,create=dir
+lxc.mount.entry = /linkerconfig linkerconfig none rbind,optional,rw,create=dir
+
+lxc.mount.entry = /dev/socket dev/socket none bind,optional,rw,create=dir
+lxc.mount.entry = /dev/__properties__ dev/__properties__ none bind,optional,rw,create=dir
+lxc.mount.entry = /dev/binder dev/binder none bind,optional,rw,create=file
+lxc.mount.entry = /dev/hwbinder dev/hwbinder none bind,optional,rw,create=file
+lxc.mount.entry = /dev/vndbinder dev/vndbinder none bind,optional,rw,create=file
+lxc.mount.entry = /dev/pmsg0 dev/pmsg0 none bind,optional,rw,create=file
+lxc.mount.entry = /dev/ashmem dev/ashmem none bind,optional,rw,create=file
+lxc.mount.entry = /dev/ion dev/ion none bind,optional,create=file
+lxc.mount.entry = /dev/input dev/input none rbind,optional,rw,create=dir
+lxc.mount.entry = selinuxfs sys/fs/selinux selinuxfs optional 0 0
+lxc.mount.entry = /dev/binderfs dev/binderfs bind bind,create=dir,optional 0 0
+
 lxc.hook.pre-start = "'${GITHUB_DIR}'/src/required-lxc-configuration/scripts/utils/utils.pre-start.sh"
 lxc.hook.post-stop = "'${GITHUB_DIR}'/src/required-lxc-configuration/scripts/utils/utils.post-stop.sh"
 # Uncomment "lxc.cgroup.memory.limit_in_bytes" to limit max RAM usage allowed for the container (remove the #)
