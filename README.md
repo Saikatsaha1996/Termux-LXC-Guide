@@ -145,6 +145,21 @@ Login to the container.
 
 Install some desktop like XFCE or GNOME.
 
+## Internet fix after desktop installation 
+
+```
+ls -l /etc/resolv.conf
+nano /run/systemd/resolve/stub-resolv.conf
+```
+#add
+```
+[Resolve]
+DNS=8.8.8.8 1.1.1.1
+FallbackDNS=9.9.9.9
+DNSStubListener=no
+```
+sudo systemctl restart systemd-resolved
+
 Eg. -
 ```
 sudo apt update
