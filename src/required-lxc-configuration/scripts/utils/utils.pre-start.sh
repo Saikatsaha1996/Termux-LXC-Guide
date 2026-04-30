@@ -31,7 +31,7 @@ umount -Rl /sys/fs/cgroup/schedtune 2>/dev/null >/dev/null
 umount -Rl "${LXC_ROOTFS_PATH}" 2>/dev/null >/dev/null
 
 # Sets correct DNS resolver to fix connectivity
-sed -i -E 's/^( *#* *)?DNS=.*/DNS=1.1.1.1/g' "${LXC_ROOTFS_PATH}/etc/systemd/resolved.conf"
+sed -i -E 's/^( *#* *)?DNS=.*/DNS=8.8.8.8 1.1.1.1/g' "${LXC_ROOTFS_PATH}/etc/systemd/resolved.conf"
 
 # Use dnsmasq if available
 #sed -i -E 's/^( *#* *)?DNSStubListener=.*/DNSStubListener=no/g' "${LXC_ROOTFS_PATH}/etc/systemd/resolved.conf"
