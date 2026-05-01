@@ -54,6 +54,7 @@ lxc.tty.max = 10
 lxc.environment = TERM
 lxc.apparmor.profile = unconfined
 lxc.cgroup.relative = 1
+lxc.autodev = 1
 lxc.cgroup2.devices.allow = a
 lxc.init.cmd = /sbin/init systemd.unified_cgroup_hierarchy=1
 lxc.mount.auto = sys:mixed proc:mixed cgroup2:rw:force
