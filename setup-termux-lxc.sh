@@ -52,9 +52,11 @@ lxc.net.0.hwaddr = 00:16:3e:b8:16:74
 lxc.hook.version = 1
 lxc.tty.max = 10
 lxc.environment = TERM
+lxc.apparmor.profile = unconfined
+lxc.cgroup.relative = 1
 lxc.cgroup2.devices.allow = a
 lxc.init.cmd = /sbin/init systemd.unified_cgroup_hierarchy=1
-lxc.mount.auto = sys:mixed proc:mixed
+lxc.mount.auto = sys:mixed proc:mixed cgroup2:rw:force
 # Mount /dev/snd
 lxc.mount.entry = /dev/snd dev/snd none bind,optional,create=dir 0 0
 # Mount /dev/dri
@@ -86,7 +88,7 @@ echo "
  If you haven't created a container yet, you can
  create a new Ubuntu container using this command -
 
-  sudo lxc-create -t download -n ubuntu -- --no-validate -d ubuntu -r noble -a arm64
+  sudo lxc-create -t download -n ubuntu -- -d ubuntu -r noble -a arm64
 
 
  You can login to the container using -
