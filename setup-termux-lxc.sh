@@ -12,8 +12,8 @@ clear 2>/dev/null
 # Check if Termux dependencies are installed
 for i in root-repo x11-repo tur-repo ${DEPENDENCIES}; do
   if ! dpkg-query -W -f"\${db:Status-Abbrev}\n" "${i}" 2>/dev/null | grep -Eq "^.i"; then
-    [ -z "${apt_update}" ] && { apt update || exit 1; } && apt_update=true
-    yes | pkg install -y "${i}" || exit 1
+    [ -z "${apt_update}" ] && { apt update || exit 1; } && apt_update=false
+    yes | apt install -y "${i}" || exit 1
   fi
 done
 
