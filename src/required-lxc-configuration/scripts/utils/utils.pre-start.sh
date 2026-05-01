@@ -31,7 +31,7 @@ for cg in blkio cpu cpuacct cpuset devices freezer memory pids schedtune; do
 done
 
 # ❌ REMOVE legacy systemd cgroup mount
-umount -l "${CGROUP_ROOT}/systemd" 2>/dev/null
+umount -Rl "${LXC_ROOTFS_PATH}" 2>/dev/null
 
 # binfmt_misc fix
 if [ ! -f /proc/sys/fs/binfmt_misc/register ]; then
@@ -39,60 +39,94 @@ if [ ! -f /proc/sys/fs/binfmt_misc/register ]; then
 fi
 
 # Clean leftover mounts
-umount -Rl "${LXC_ROOTFS_PATH}" 2>/dev/null
+# Sets correct DNS resolver to fix connectivity
+sed -i -E 's/^( *#* *)?DNS=.*/DNS=8.8.8.8 1.1.1.1/g' "${LXC_ROOTFS_PATH}/etc/systemd/resolved.conf"
 
-# DNS fix
-sed -i -E 's/^( *#* *)?DNS=.*/DNS=8.8.8.8 1.1.1.1/g' \
-  "${LXC_ROOTFS_PATH}/etc/systemd/resolved.conf"
-
-# Network
 lxc-net start
 
-# TERM fix
+# Adds Termux colors
 sed -i '/TERM/d' "${LXC_ROOTFS_PATH}/etc/environment"
-echo "TERM=${TERM}" >> "${LXC_ROOTFS_PATH}/etc/environment"
+echo 'TERM="'${TERM}'"' >> "${LXC_ROOTFS_PATH}/etc/environment"
 
-# PulseAudio
+# Use PulseAudio for sound
 sed -i '/PULSE_SERVER/d' "${LXC_ROOTFS_PATH}/etc/environment"
-echo 'PULSE_SERVER=10.0.4.1:4713' >> "${LXC_ROOTFS_PATH}/etc/environment"
+echo 'PULSE_SERVER="10.0.4.1:4713"' >> "${LXC_ROOTFS_PATH}/etc/environment"
+su "${SUDO_USER}" -c "PATH='${PREFIX}/bin:${PATH}' HOME='${PREFIX}/var/run/lxc-pulse' pulseaudio --start --load='module-native-protocol-tcp auth-ip-acl=10.0.4.0/24 auth-anonymous=1' --exit-idle-time=-1"
+restorecon -R "${PREFIX}/var/run/lxc-pulse"
 
-su "${SUDO_USER}" -c "PATH='${PREFIX}/bin:${PATH}' \
-HOME='${PREFIX}/var/run/lxc-pulse' \
-pulseaudio --start \
---load='module-native-protocol-tcp auth-ip-acl=10.0.4.0/24 auth-anonymous=1' \
---exit-idle-time=-1"
+# Remove redundant dialog
+# http://c-nergy.be/blog/?p=12073
+mkdir -p "${LXC_ROOTFS_PATH}/etc/polkit-1/localauthority/50-local.d"
+chmod 755 "${LXC_ROOTFS_PATH}/etc/polkit-1/localauthority/50-local.d"
 
-# udevadm dummy fix
+required_configuration='[Allow Colord all Users]
+Identity=unix-user:*
+Action=org.freedesktop.color-manager.create-device;org.freedesktop.color-manager.create-profile;org.freedesktop.color-manager.delete-device;org.freedesktop.color-manager.delete-profile;org.freedesktop.color-manager.modify-device;org.freedesktop.color-manager.modify-profile
+ResultAny=no
+ResultInactive=no
+ResultActive=yes'
+
+echo "${required_configuration}" > "${LXC_ROOTFS_PATH}/etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla"
+
+# Makes non-funtional udevadm always return true, or else some packages and snaps gives errors when trying to install
 if [ ! -e "${LXC_ROOTFS_PATH}/usr/bin/udevadm." ]; then
-  mv -f "${LXC_ROOTFS_PATH}/usr/bin/udevadm" \
-        "${LXC_ROOTFS_PATH}/usr/bin/udevadm."
+  mv -f "${LXC_ROOTFS_PATH}/usr/bin/udevadm" "${LXC_ROOTFS_PATH}/usr/bin/udevadm."
 fi
 
-cat > "${LXC_ROOTFS_PATH}/usr/bin/udevadm" << 'EOF'
-#!/usr/bin/env bash
-/usr/bin/udevadm. "$@" || true
-EOF
+required_configuration='#!/usr/bin/bash
+/usr/bin/udevadm. "$@" || true'
 
+echo "${required_configuration}" > "${LXC_ROOTFS_PATH}/usr/bin/udevadm"
 chmod 755 "${LXC_ROOTFS_PATH}/usr/bin/udevadm"
 
-# iptables legacy fix
-rm -f "${LXC_ROOTFS_PATH}/usr/sbin/iptables"
-ln -sf /usr/sbin/iptables-legacy \
-       "${LXC_ROOTFS_PATH}/usr/sbin/iptables"
+# Copy temporary config files to rootfs /tmp
+rm -rf "${LXC_ROOTFS_PATH}/tmp/${CONFIG_BASENAME}"
+mkdir -p "${LXC_ROOTFS_PATH}/tmp"
+cp -rf "${CONFIG_PATH}" "${LXC_ROOTFS_PATH}/tmp"
 
-rm -f "${LXC_ROOTFS_PATH}/usr/sbin/ip6tables"
-ln -sf /usr/sbin/ip6tables-legacy \
-       "${LXC_ROOTFS_PATH}/usr/sbin/ip6tables"
+if [ -e "${LXC_ROOTFS_PATH}/usr/lib/systemd/system/lxc-net.service" ] || [ -f "${LXC_ROOTFS_PATH}/usr/libexec/lxc/lxc-net" ] || [ -f "${LXC_ROOTFS_PATH}/usr/lib/aarch64-linux-gnu/lxc/lxc-net" ] || [ -f "${LXC_ROOTFS_PATH}/usr/lib/arm-linux-gnu/lxc/lxc-net" ] || [ -f "${LXC_ROOTFS_PATH}/usr/lib/x86_64-linux-gnu/lxc/lxc-net" ] || [ -f "${LXC_ROOTFS_PATH}/usr/lib/x86-linux-gnu/lxc/lxc-net" ]; then
+  LD_PRELOAD= chroot "${LXC_ROOTFS_PATH}" usr/bin/sh -c " \
+    . '/tmp/${CONFIG_BASENAME}/src/required-lxc-configuration/scripts/utils/utils.set-env.sh'; \
+    '/tmp/${CONFIG_BASENAME}/src/required-lxc-configuration/scripts/utils/utils.temp-mount.sh' mount; \
+    '/tmp/${CONFIG_BASENAME}/src/required-lxc-configuration/scripts/utils/utils.lxc-net.configuration.sh'; \
+    '/tmp/${CONFIG_BASENAME}/src/required-lxc-configuration/scripts/utils/utils.temp-mount.sh' umount; \
+  "
+fi
 
-# tmpfiles (minimal)
+if [ -e "${LXC_ROOTFS_PATH}/usr/lib/systemd/system/waydroid-container.service" ] || [ -f "${LXC_ROOTFS_PATH}/usr/lib/waydroid/data/scripts/waydroid-net.sh" ] || [ -f "${LXC_ROOTFS_PATH}/var/lib/waydroid/waydroid.cfg" ]; then
+  LD_PRELOAD= chroot "${LXC_ROOTFS_PATH}" usr/bin/sh -c " \
+    . '/tmp/${CONFIG_BASENAME}/src/required-lxc-configuration/scripts/utils/utils.set-env.sh'; \
+    '/tmp/${CONFIG_BASENAME}/src/required-lxc-configuration/scripts/utils/utils.temp-mount.sh' mount; \
+    '/tmp/${CONFIG_BASENAME}/src/required-lxc-configuration/scripts/utils/utils.waydroid.configuration.sh'; \
+    '/tmp/${CONFIG_BASENAME}/src/required-lxc-configuration/scripts/utils/utils.temp-mount.sh' umount; \
+  "
+fi
+
+# Fixes iptables command as Android requires legacy mode
+rm -rf "${LXC_ROOTFS_PATH}/usr/sbin/iptables" "${LXC_ROOTFS_PATH}/usr/sbin/ip6tables"
+ln -nsf /usr/sbin/iptables-legacy "${LXC_ROOTFS_PATH}/usr/sbin/iptables"
+ln -nsf /usr/sbin/ip6tables-legacy "${LXC_ROOTFS_PATH}/usr/sbin/ip6tables"
+
+# Sets up container internals
 mkdir -p "${LXC_ROOTFS_PATH}/etc/tmpfiles.d"
+echo "${required_configuration}" > "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
 
-cat > "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/lxc.conf" <<EOF
-c! /dev/fuse 0600 root root - 10:229
-c! /dev/ashmem 0666 root root - 10:58
-EOF
+#for i in $(seq -s " " 0 255); do
+#  echo "b!     /dev/loop${i}  0600 root root  -   7:$((${i} * 8))" >> "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
+#done
 
-# password init (once)
+mkdir -p "${LXC_ROOTFS_PATH}/etc/systemd/system/multi-user.target.wants"
+rm -rf "${LXC_ROOTFS_PATH}/usr/lib/required-lxc-configuration"
+cp -rf "${LXC_ROOTFS_PATH}/tmp/${CONFIG_BASENAME}/src/required-lxc-configuration" "${LXC_ROOTFS_PATH}/usr/lib"
+find "${LXC_ROOTFS_PATH}/etc/systemd/system" -maxdepth 1 -type l -name "required\.*\.service" -delete
+find "${LXC_ROOTFS_PATH}/etc/systemd/system/multi-user.target.wants" -maxdepth 1 -type l -name "required\.*\.service" -delete
+
+for i in $(find "${LXC_ROOTFS_PATH}/usr/lib/required-lxc-configuration/services" -maxdepth 1 -type f -name "required\.*\.service"); do
+  service_name="$(basename "${i}")"
+  ln -nsf "/usr/lib/required-lxc-configuration/services/${service_name}" "${LXC_ROOTFS_PATH}/etc/systemd/system/${service_name}"
+  ln -nsf "/etc/systemd/system/${service_name}" "${LXC_ROOTFS_PATH}/etc/systemd/system/multi-user.target.wants/${service_name}"
+done
+
 if ! grep -Eq "^# RESET_PASSWORD_ONCE=done" "${LXC_CONFIG_FILE}"; then
   sed -i '/RESET_PASSWORD_ONCE/d' "${LXC_CONFIG_FILE}"
   LD_PRELOAD= chroot "${LXC_ROOTFS_PATH}" usr/bin/sh -c " \
@@ -110,6 +144,6 @@ rm -rf "${LXC_ROOTFS_PATH}/tmp/${CONFIG_BASENAME}"
 
 # Sets temporary suid for the rootfs using bind mounts, otherwise normal users inside the container won't be able to use sudo commands
 mount -B "${LXC_ROOTFS_PATH}" "${LXC_ROOTFS_PATH}"
-mount -i -o remount,suid "${LXC_ROOTFS_PATH}"
+mount -o remount,suid,dev "${LXC_ROOTFS_PATH}"
 
 exit 0
