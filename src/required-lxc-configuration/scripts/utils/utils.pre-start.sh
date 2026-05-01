@@ -114,13 +114,21 @@ mkdir -p "${LXC_ROOTFS_PATH}/etc/tmpfiles.d"
 # ১. /dev/dri আনকমেন্ট করা হয়েছে এবং graphics গ্রুপ সেট করা হয়েছে (যা ID 1003)
 # ২. /dev/snd আনকমেন্ট করা হয়েছে অডিওর জন্য
 required_configuration='#Type Path               Mode User Group     Age Argument
-c!     /dev/fuse          0600 root root      -   10:229
-c!     /dev/ashmem        0666 root root      -   10:58
-d!     /dev/snd           0755 root root      -   -
-d!     /dev/dri           0755 root root      -   -
-c!     /dev/dri/card0     0666 root graphics  -   226:0
+# /etc/tmpfiles.d/required.lxc-setup.conf
+
+# GPU/Direct Rendering (DRM)
+d!     /dev/dri            0755 root graphics  -   -
+c!     /dev/dri/card0      0666 root graphics  -   226:0
 c!     /dev/dri/renderD128 0666 root graphics  -   226:128
-c!     /dev/loop-control  0600 root root      -   10:237'
+
+# Android Graphics/Memory
+c!     /dev/kgsl-3d0       0666 system system  -   237:0
+c!     /dev/ion            0664 system system  -   10:62
+
+# Other essentials
+c!     /dev/fuse           0600 root root      -   10:229
+c!     /dev/ashmem         0666 root root      -   10:58
+c!     /dev/loop-control   0600 root root      -   10:237'
 
 echo "${required_configuration}" > "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
 
