@@ -93,18 +93,23 @@ c! /dev/ashmem 0666 root root - 10:58
 EOF
 
 # password init (once)
-if ! grep -q "RESET_PASSWORD_ONCE=done" "${LXC_CONFIG_FILE}"; then
-  chroot "${LXC_ROOTFS_PATH}" sh -c "
-    echo root:password | chpasswd
-    echo ubuntu:password | chpasswd
+if ! grep -Eq "^# RESET_PASSWORD_ONCE=done" "${LXC_CONFIG_FILE}"; then
+  sed -i '/RESET_PASSWORD_ONCE/d' "${LXC_CONFIG_FILE}"
+  LD_PRELOAD= chroot "${LXC_ROOTFS_PATH}" usr/bin/sh -c " \
+    . '/tmp/${CONFIG_BASENAME}/src/required-lxc-configuration/scripts/utils/utils.set-env.sh'; \
+    '/tmp/${CONFIG_BASENAME}/src/required-lxc-configuration/scripts/utils/utils.temp-mount.sh' mount; \
+    echo password | sed 's/.*/\0\n\0/' | passwd root 2>/dev/null >/dev/null; \
+    echo password | sed 's/.*/\0\n\0/' | passwd ubuntu 2>/dev/null >/dev/null; \
+    '/tmp/${CONFIG_BASENAME}/src/required-lxc-configuration/scripts/utils/utils.temp-mount.sh' umount; \
   "
   echo "# RESET_PASSWORD_ONCE=done" >> "${LXC_CONFIG_FILE}"
 fi
 
-# suid fix
-mount -B "${LXC_ROOTFS_PATH}" "${LXC_ROOTFS_PATH}"
-mount -o remount,suid "${LXC_ROOTFS_PATH}"
+# Remove temporary config files from rootfs /tmp
+rm -rf "${LXC_ROOTFS_PATH}/tmp/${CONFIG_BASENAME}"
 
-echo "[+] LXC pre-start (cgroup v2) done"
+# Sets temporary suid for the rootfs using bind mounts, otherwise normal users inside the container won't be able to use sudo commands
+mount -B "${LXC_ROOTFS_PATH}" "${LXC_ROOTFS_PATH}"
+mount -i -o remount,suid "${LXC_ROOTFS_PATH}"
 
 exit 0
