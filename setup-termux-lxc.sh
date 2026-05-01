@@ -46,16 +46,14 @@ sudo restorecon -R "${PREFIX}/etc/lxc" 2>/dev/null >/dev/null
 chmod 700 "${PREFIX}/etc/lxc"
 rm -rf "${PREFIX}/etc/lxc/default.conf"
 
-required_configuration='lxc.net.0.type = veth
-lxc.net.0.link = lxcbr0
+required_configuration='lxc.net.0.type = none
 lxc.net.0.flags = up
-lxc.net.0.hwaddr = 00:17:3e:xx:xx:xx
+lxc.net.0.hwaddr = 00:16:3e:b8:16:74
 lxc.hook.version = 1
 lxc.tty.max = 10
 lxc.environment = TERM
-lxc.cgroup.devices.allow =
-lxc.cgroup.devices.deny =
-lxc.init.cmd = /sbin/init systemd.unified_cgroup_hierarchy=0
+lxc.cgroup2.devices.allow = a
+lxc.init.cmd = /sbin/init
 lxc.mount.auto = cgroup:mixed sys:mixed proc:mixed
 # Mount /dev/snd
 lxc.mount.entry = /dev/snd dev/snd none bind,optional,create=dir 0 0
@@ -74,8 +72,7 @@ lxc.mount.entry = /proc/sys/fs/binfmt_misc proc/sys/fs/binfmt_misc none bind,opt
 
 lxc.hook.pre-start = "'${GITHUB_DIR}'/src/required-lxc-configuration/scripts/utils/utils.pre-start.sh"
 lxc.hook.post-stop = "'${GITHUB_DIR}'/src/required-lxc-configuration/scripts/utils/utils.post-stop.sh"
-# Uncomment "lxc.cgroup.memory.limit_in_bytes" to limit max RAM usage allowed for the container (remove the #)
-# lxc.cgroup.memory.limit_in_bytes = 3G'
+
 echo "${required_configuration}" > "${PREFIX}/etc/lxc/default.conf"
 sudo chown "${SUDO_USER}:${SUDO_USER}" "${PREFIX}/etc/lxc/default.conf"
 sudo chgrp "${SUDO_USER}" "${PREFIX}/etc/lxc/default.conf"
