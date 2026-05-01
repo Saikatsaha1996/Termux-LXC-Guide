@@ -4,7 +4,7 @@
 GITHUB_URL="https://github.com/Saikatsaha1996/Termux-LXC-Guide"
 export HOME="/data/data/com.termux/files/home"
 GITHUB_DIR="${HOME}/$(basename "${GITHUB_URL}")"
-DEPENDENCIES="sudo tsu nano mount-utils pulseaudio termux-tools dos2unix curl git iptables dnsmasq"
+DEPENDENCIES="sudo nano mount-utils pulseaudio termux-tools dos2unix curl git iptables dnsmasq"
 export TMPDIR="$(dirname "$(mktemp -u)")"
 
 clear 2>/dev/null
