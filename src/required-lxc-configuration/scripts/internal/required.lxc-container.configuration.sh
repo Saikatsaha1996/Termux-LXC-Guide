@@ -1,20 +1,34 @@
 #!/usr/bin/env sh
 
-mount -o remount,rw /sys/fs/cgroup
+# Ensure cgroup2 is mounted properly
 
-for cg in schedtune cpu cpuacct cpu,cpuacct; do
-  umount -Rl "/sys/fs/cgroup/${cg}" 2>/dev/null >/dev/null
-  rm -rf "/sys/fs/cgroup/${cg}"
-done
+CGROUP_ROOT="/sys/fs/cgroup"
 
-for cg in cpu cpuacct; do
-  mkdir -p "/sys/fs/cgroup/${cg}"
-  mount -t cgroup -o "rw,nosuid,nodev,noexec,relatime,${cg}" "${cg}" "/sys/fs/cgroup/${cg}"
-done
+# Remount RW temporarily
+mount -o remount,rw ${CGROUP_ROOT} 2>/dev/null
 
-mount -o remount,ro /sys/fs/cgroup
+# If already cgroup2 → skip
+if mount | grep -q "type cgroup2"; then
+    echo "[+] cgroup v2 already mounted"
+else
+    echo "[*] Mounting cgroup v2..."
 
-# Fix permission of deb files for _apt user
-# find /home -type f -name '*\.deb' -exec setfacl -m u:_apt:rwx '{}' +
+    # Cleanup old v1 mounts (safe minimal cleanup)
+    for cg in cpu cpuacct schedtune cpu,cpuacct; do
+        umount -l "${CGROUP_ROOT}/${cg}" 2>/dev/null
+        rm -rf "${CGROUP_ROOT:?}/${cg}"
+    done
+
+    # Mount unified cgroup v2
+    mount -t cgroup2 none ${CGROUP_ROOT} || {
+        echo "[-] Failed to mount cgroup2"
+        exit 1
+    }
+fi
+
+# Remount RO back (optional)
+mount -o remount,ro ${CGROUP_ROOT} 2>/dev/null
+
+echo "[+] cgroup v2 ready"
 
 exit 0
