@@ -113,6 +113,7 @@ mkdir -p "${LXC_ROOTFS_PATH}/etc/tmpfiles.d"
 # Configuration ফিক্স করা হয়েছে:
 # ১. /dev/dri আনকমেন্ট করা হয়েছে এবং graphics গ্রুপ সেট করা হয়েছে (যা ID 1003)
 # ২. /dev/snd আনকমেন্ট করা হয়েছে অডিওর জন্য
+# ১. বেসিক কনফিগারেশন তৈরি (Static)
 required_configuration='#Type Path               Mode User Group     Age Argument
 # /etc/tmpfiles.d/required.lxc-setup.conf
 
@@ -121,8 +122,8 @@ d!     /dev/dri            0755 root graphics  -   -
 c!     /dev/dri/card0      0666 root graphics  -   226:0
 c!     /dev/dri/renderD128 0666 root graphics  -   226:128
 
-# Android sound
-d!     /dev/snd            0755 1000 audio     -   -
+# Android sound directory
+d!     /dev/snd            0755 1000 1005      -   -
 
 # Android Graphics/Memory
 c!     /dev/kgsl-3d0       0666 1000 1000      -   237:0
@@ -133,30 +134,39 @@ c!     /dev/fuse           0600 root root      -   10:229
 c!     /dev/ashmem         0666 root root      -   10:58
 c!     /dev/loop-control   0600 root root      -   10:237'
 
+# ফাইলটি নতুন করে তৈরি করা
 echo "${required_configuration}" > "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
 
-# Loop Device ফিক্স:
-# Standard Linux-এ loop device এর major number ৭ এবং minor number সিরিয়ালি (০, ১, ২...) হয়।
-# i * 8 সাধারণত প্রয়োজন হয় না, তাই সরাসরি i ব্যবহার করা হয়েছে।
+# ২. Loop Device যোগ করা
 for i in $(seq 0 255); do
   echo "b!     /dev/loop${i}  0660 root disk  -   7:${i}" >> "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
 done
 
-# সাউন্ড ডিভাইস ফিক্স (Loop Device এর মতো অটোমেটিক অ্যাড):
-# এটি হোস্টের /dev/snd থেকে সব ডিভাইসের তথ্য নিয়ে tmpfiles.d এ যোগ করবে
+# ৩. Android Sound ডিভাইসগুলো (dynamic) যোগ করা
 if [ -d "/dev/snd" ]; then
   for snd_dev in /dev/snd/*; do
+    [ -e "$snd_dev" ] || continue
     dev_name=$(basename "$snd_dev")
-    # মেজোর এবং মাইনর নম্বর বের করা (যেমন: 116:33)
     dev_info=$(stat -c "%t:%T" "$snd_dev")
-    # হেক্সাডেসিমাল থেকে ডেসিমাল এ রূপান্তর
     major=$((0x${dev_info%:*}))
     minor=$((0x${dev_info#*:}))
-    
-    # কনফিগ ফাইলে এন্ট্রি যোগ করা (ইউজার ubuntu/1000 এবং গ্রুপ termux_audio/1005)
     echo "c!     /dev/snd/${dev_name}  0660 1000 1005  -   ${major}:${minor}" >> "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
   done
 fi
+
+# ৪. Input Device (Keyboard/Mouse) যোগ করা
+if [ -d "/dev/input" ]; then
+  echo "d!     /dev/input          0755 root input  -   -" >> "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
+  for input_dev in /dev/input/event*; do
+    [ -e "$input_dev" ] || continue
+    dev_name=$(basename "$input_dev")
+    dev_info=$(stat -c "%t:%T" "$input_dev")
+    major=$((0x${dev_info%:*}))
+    minor=$((0x${dev_info#*:}))
+    echo "c!     /dev/input/${dev_name}  0660 1000 input  -   ${major}:${minor}" >> "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
+  done
+fi
+
 
 
 
