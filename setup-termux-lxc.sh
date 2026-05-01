@@ -72,7 +72,7 @@ lxc.mount.entry = /proc/sys/fs/binfmt_misc proc/sys/fs/binfmt_misc none bind,opt
 
 lxc.hook.pre-start = "'${GITHUB_DIR}'/src/required-lxc-configuration/scripts/utils/utils.pre-start.sh"
 lxc.hook.post-stop = "'${GITHUB_DIR}'/src/required-lxc-configuration/scripts/utils/utils.post-stop.sh"
-
+'
 echo "${required_configuration}" > "${PREFIX}/etc/lxc/default.conf"
 sudo chown "${SUDO_USER}:${SUDO_USER}" "${PREFIX}/etc/lxc/default.conf"
 sudo chgrp "${SUDO_USER}" "${PREFIX}/etc/lxc/default.conf"
