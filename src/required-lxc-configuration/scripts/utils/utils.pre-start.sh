@@ -109,11 +109,28 @@ ln -nsf /usr/sbin/ip6tables-legacy "${LXC_ROOTFS_PATH}/usr/sbin/ip6tables"
 
 # Sets up container internals
 mkdir -p "${LXC_ROOTFS_PATH}/etc/tmpfiles.d"
+
+# Configuration ফিক্স করা হয়েছে:
+# ১. /dev/dri আনকমেন্ট করা হয়েছে এবং graphics গ্রুপ সেট করা হয়েছে (যা ID 1003)
+# ২. /dev/snd আনকমেন্ট করা হয়েছে অডিওর জন্য
+required_configuration='#Type Path               Mode User Group     Age Argument
+c!     /dev/fuse          0600 root root      -   10:229
+c!     /dev/ashmem        0666 root root      -   10:58
+d!     /dev/snd           0755 root root      -   -
+d!     /dev/dri           0755 root root      -   -
+c!     /dev/dri/card0     0666 root graphics  -   226:0
+c!     /dev/dri/renderD128 0666 root graphics  -   226:128
+c!     /dev/loop-control  0600 root root      -   10:237'
+
 echo "${required_configuration}" > "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
 
-#for i in $(seq -s " " 0 255); do
-#  echo "b!     /dev/loop${i}  0600 root root  -   7:$((${i} * 8))" >> "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
-#done
+# Loop Device ফিক্স:
+# Standard Linux-এ loop device এর major number ৭ এবং minor number সিরিয়ালি (০, ১, ২...) হয়।
+# i * 8 সাধারণত প্রয়োজন হয় না, তাই সরাসরি i ব্যবহার করা হয়েছে।
+for i in $(seq 0 255); do
+  echo "b!     /dev/loop${i}  0660 root disk  -   7:${i}" >> "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
+done
+
 
 mkdir -p "${LXC_ROOTFS_PATH}/etc/systemd/system/multi-user.target.wants"
 rm -rf "${LXC_ROOTFS_PATH}/usr/lib/required-lxc-configuration"
