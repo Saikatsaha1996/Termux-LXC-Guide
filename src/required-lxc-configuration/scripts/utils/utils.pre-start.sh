@@ -121,9 +121,12 @@ d!     /dev/dri            0755 root graphics  -   -
 c!     /dev/dri/card0      0666 root graphics  -   226:0
 c!     /dev/dri/renderD128 0666 root graphics  -   226:128
 
+# Android sound
+d!     /dev/snd            0755 1000 audio     -   -
+
 # Android Graphics/Memory
-c!     /dev/kgsl-3d0       0666 system system  -   237:0
-c!     /dev/ion            0664 system system  -   10:62
+c!     /dev/kgsl-3d0       0666 1000 1000      -   237:0
+c!     /dev/ion            0664 1000 1000      -   10:62
 
 # Other essentials
 c!     /dev/fuse           0600 root root      -   10:229
@@ -138,6 +141,23 @@ echo "${required_configuration}" > "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.l
 for i in $(seq 0 255); do
   echo "b!     /dev/loop${i}  0660 root disk  -   7:${i}" >> "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
 done
+
+# সাউন্ড ডিভাইস ফিক্স (Loop Device এর মতো অটোমেটিক অ্যাড):
+# এটি হোস্টের /dev/snd থেকে সব ডিভাইসের তথ্য নিয়ে tmpfiles.d এ যোগ করবে
+if [ -d "/dev/snd" ]; then
+  for snd_dev in /dev/snd/*; do
+    dev_name=$(basename "$snd_dev")
+    # মেজোর এবং মাইনর নম্বর বের করা (যেমন: 116:33)
+    dev_info=$(stat -c "%t:%T" "$snd_dev")
+    # হেক্সাডেসিমাল থেকে ডেসিমাল এ রূপান্তর
+    major=$((0x${dev_info%:*}))
+    minor=$((0x${dev_info#*:}))
+    
+    # কনফিগ ফাইলে এন্ট্রি যোগ করা (ইউজার ubuntu/1000 এবং গ্রুপ termux_audio/1005)
+    echo "c!     /dev/snd/${dev_name}  0660 1000 1005  -   ${major}:${minor}" >> "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
+  done
+fi
+
 
 
 mkdir -p "${LXC_ROOTFS_PATH}/etc/systemd/system/multi-user.target.wants"
