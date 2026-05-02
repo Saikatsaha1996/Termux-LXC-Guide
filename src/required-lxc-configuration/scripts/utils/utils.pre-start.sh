@@ -119,90 +119,57 @@ ln -nsf /usr/sbin/ip6tables-legacy "${LXC_ROOTFS_PATH}/usr/sbin/ip6tables"
 mkdir -p "${LXC_ROOTFS_PATH}/etc/tmpfiles.d"
 TMPFILE="${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
 
-# নতুন ফাইল তৈরি
-cat > "$TMPFILE" <<EOF
-# Auto-generated LXC /dev config
+echo "# Auto-generated full /dev mapping" > "$TMPFILE"
 
-# GPU (DRM)
-d! /dev/dri 0755 0 1003 -
-c! /dev/dri/card0 0666 0 1003 - 226:0
-c! /dev/dri/renderD128 0666 0 1003 - 226:128
-# Audio dir
-d! /dev/snd 0755 1000 1005 -
-# Input dir
-d! /dev/input 0755 0 1007 -
-# Android GPU/memory
-c! /dev/kgsl-3d0 0666 1000 1000 - 237:0
-c! /dev/ion 0664 1000 1000 - 10:62
-# Core
-c! /dev/fuse 0600 0 0 - 10:229
+# ২. কোর ডিভাইসগুলো একবারে লিখুন
+cat <<EOF >> "$TMPFILE"
+c! /dev/null 0666 0 0 - 1:3
+c! /dev/zero 0666 0 0 - 1:5
+c! /dev/random 0666 0 0 - 1:8
+c! /dev/urandom 0666 0 0 - 1:9
+c! /dev/tty 0666 0 0 - 5:0
+c! /dev/ptmx 0666 0 0 - 5:2
 c! /dev/ashmem 0666 0 0 - 10:58
+c! /dev/fuse 0600 0 0 - 10:229
 c! /dev/loop-control 0600 0 0 - 10:237
 EOF
 
-# ---------------- LOOP DEVICES ----------------
-for i in $(seq 0 255); do
-  echo "b! /dev/loop${i} 0660 0 6 - 7:${i}" >> "$TMPFILE"
+# ৩. ডিরেক্টরি চেক
+for d in dri snd input binderfs; do
+  [ -d "/dev/$d" ] && echo "d! /dev/$d 0755 0 0 -" >> "$TMPFILE"
 done
 
-# ---------------- SOUND DEVICES ----------------
-if [ -d /dev/snd ]; then
-  for snd_dev in /dev/snd/*; do
-    [ -e "$snd_dev" ] || continue
-
-    name=$(basename "$snd_dev")
-    dev_info=$(stat -c "%t:%T" "$snd_dev")
-    major=$((0x${dev_info%:*}))
-    minor=$((0x${dev_info#*:}))
-
-    echo "c! /dev/snd/${name} 0660 1000 1005 - ${major}:${minor}" >> "$TMPFILE"
-  done
-fi
-
-# ---------------- INPUT DEVICES ----------------
-if [ -d /dev/input ]; then
-  for input_dev in /dev/input/event*; do
-    [ -e "$input_dev" ] || continue
-
-    name=$(basename "$input_dev")
-    dev_info=$(stat -c "%t:%T" "$input_dev")
-    major=$((0x${dev_info%:*}))
-    minor=$((0x${dev_info#*:}))
-
-    echo "c! /dev/input/${name} 0660 1000 1007 - ${major}:${minor}" >> "$TMPFILE"
-  done
-fi
-
-# ---------------- AUTO باقي /dev ----------------
-for dev in /dev/*; do
-  [ -e "$dev" ] || continue
-
-  name=$(basename "$dev")
-
-  # already handled skip
+# ৪. ডিভাইস অ্যাড করার ফাংশন (উন্নত)
+add_dev() {
+  local dev="$1"
+  [ -e "$dev" ] || return
+  
+  local name="${dev#/dev/}"
   case "$name" in
-    dri|snd|input|pts|shm|fd|stdin|stdout|stderr|console)
-      continue
-    ;;
+    pts/*|shm/*|fd|stdin|stdout|stderr|console) return ;;
   esac
 
-  if [ -c "$dev" ] || [ -b "$dev" ]; then
-    dev_info=$(stat -c "%t:%T" "$dev")
-    major=$((0x${dev_info%:*}))
-    minor=$((0x${dev_info#*:}))
+  local dev_info=$(stat -c "%t:%T:%a:%u:%g" "$dev")
+  IFS=':' read -r major_hex minor_hex perms uid gid <<< "$dev_info"
+  
+  local major=$((0x$major_hex))
+  local minor=$((0x$minor_hex))
+  local type="c"
+  [ -b "$dev" ] && type="b"
 
-    perms=$(stat -c "%a" "$dev")
-    uid=$(stat -c "%u" "$dev")
-    gid=$(stat -c "%g" "$dev")
+  echo "$type! /dev/$name $perms $uid $gid - $major:$minor" >> "$TMPFILE"
+}
 
-    type="c"
-    [ -b "$dev" ] && type="b"
-
-    echo "$type! /dev/${name} ${perms} ${uid} ${gid} - ${major}:${minor}" >> "$TMPFILE"
-  fi
+# ৫. Find কমান্ডের আউটপুট প্রসেস করা
+# এখানে পাইপলাইনের বদলে ফর-লুপ ব্যবহার করা নিরাপদ
+for dev in $(find /dev -maxdepth 2 \( -type c -o -type b \) 2>/dev/null); do
+  add_dev "$dev"
 done
 
-
+# ৬. লুপ ডিভাইস (০ থেকে ৭ পর্যন্ত রাখা ভালো, ২৫৫ অনেক বেশি)
+for i in $(seq 0 7); do
+  echo "b! /dev/loop${i} 0660 0 6 - 7:${i}" >> "$TMPFILE"
+done
 
 mkdir -p "${LXC_ROOTFS_PATH}/etc/systemd/system/multi-user.target.wants"
 rm -rf "${LXC_ROOTFS_PATH}/usr/lib/required-lxc-configuration"
