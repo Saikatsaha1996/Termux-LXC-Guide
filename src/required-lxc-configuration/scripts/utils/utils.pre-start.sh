@@ -12,26 +12,33 @@ CONFIG_BASENAME="$(basename "${CONFIG_PATH}")"
 
 CGROUP_ROOT="/sys/fs/cgroup"
 
-# ✅ Ensure cgroup2 mounted (DO NOT recreate v1)
-if ! mount | grep -q "type cgroup2"; then
-  echo "[*] Mounting cgroup v2..."
-  mkdir -p "${CGROUP_ROOT}"
-  mount -t cgroup2 none "${CGROUP_ROOT}" || {
-    echo "[-] Failed to mount cgroup2"
-    exit 1
-  }
-else
-  echo "[+] cgroup v2 already active"
-fi
-
-# ❌ REMOVE all v1 mounts (safe cleanup)
-for cg in blkio cpu cpuacct cpuset devices freezer memory pids schedtune; do
-  umount -l "${CGROUP_ROOT}/${cg}" 2>/dev/null
-  rm -rf "${CGROUP_ROOT:?}/${cg}"
+for cg in blkio cpu cpuacct cpuset devices freezer memory pids schedtune systemd; do
+  if mount | grep -q "${CGROUP_ROOT}/${cg}"; then
+    umount -l "${CGROUP_ROOT}/${cg}" 2>/dev/null
+  fi
+  rm -rf "${CGROUP_ROOT:?}/${cg}" 2>/dev/null
 done
 
-# ❌ REMOVE legacy systemd cgroup mount
-umount -Rl "${LXC_ROOTFS_PATH}" 2>/dev/null
+if ! mount | grep -q "on ${CGROUP_ROOT} type cgroup2"; then
+  echo "[*] Attempting to mount cgroup v2..."
+  mkdir -p "${CGROUP_ROOT}"
+  mount -o remount,rw,nosuid,nodev,noexec,relatime none "${CGROUP_ROOT}" 2>/dev/null || \
+  mount -t cgroup2 none "${CGROUP_ROOT}" || {
+    echo "[-] Critical: Failed to mount cgroup2"
+    mkdir -p "${CGROUP_ROOT}/unified"
+    mount -t cgroup2 none "${CGROUP_ROOT}/unified" || exit 1
+    CGROUP_ROOT="${CGROUP_ROOT}/unified"
+  }
+else
+  echo "[+] cgroup v2 is already active at ${CGROUP_ROOT}"
+fi
+
+if [ -f "${CGROUP_ROOT}/cgroup.subtree_control" ]; then
+  echo "[*] Enabling cgroup controllers..."
+  for c in cpuset cpu io memory pids; do
+    echo "+$c" > "${CGROUP_ROOT}/cgroup.subtree_control" 2>/dev/null
+  done
+fi
 
 # binfmt_misc fix
 if [ ! -f /proc/sys/fs/binfmt_misc/register ]; then
@@ -110,10 +117,7 @@ ln -nsf /usr/sbin/ip6tables-legacy "${LXC_ROOTFS_PATH}/usr/sbin/ip6tables"
 # Sets up container internals
 mkdir -p "${LXC_ROOTFS_PATH}/etc/tmpfiles.d"
 
-# Configuration ফিক্স করা হয়েছে:
-# ১. /dev/dri আনকমেন্ট করা হয়েছে এবং graphics গ্রুপ সেট করা হয়েছে (যা ID 1003)
-# ২. /dev/snd আনকমেন্ট করা হয়েছে অডিওর জন্য
-# ১. বেসিক কনফিগারেশন তৈরি (Static)
+
 required_configuration='#Type Path               Mode User Group     Age Argument
 # /etc/tmpfiles.d/required.lxc-setup.conf
 
