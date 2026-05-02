@@ -59,7 +59,7 @@ lxc.cgroup2.devices.allow = a
 lxc.init.cmd = /sbin/init systemd.unified_cgroup_hierarchy=1
 lxc.mount.auto = sys:mixed proc:mixed
 # Mount /dev/snd
-lxc.mount.entry = /dev/snd dev/snd none bind,optional,create=dir 0 0
+#lxc.mount.entry = /dev/snd dev/snd none bind,optional,create=dir 0 0
 # Mount /dev/dri
 #lxc.mount.entry = /dev/dri dev/dri none bind,optional,create=dir 0 0
 # Mount /sdcard
