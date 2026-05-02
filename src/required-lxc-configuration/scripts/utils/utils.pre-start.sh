@@ -115,62 +115,92 @@ ln -nsf /usr/sbin/iptables-legacy "${LXC_ROOTFS_PATH}/usr/sbin/iptables"
 ln -nsf /usr/sbin/ip6tables-legacy "${LXC_ROOTFS_PATH}/usr/sbin/ip6tables"
 
 # Sets up container internals
+
 mkdir -p "${LXC_ROOTFS_PATH}/etc/tmpfiles.d"
+TMPFILE="${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
 
+# নতুন ফাইল তৈরি
+cat > "$TMPFILE" <<EOF
+# Auto-generated LXC /dev config
 
-required_configuration='#Type Path               Mode User Group     Age Argument
-# /etc/tmpfiles.d/required.lxc-setup.conf
+# GPU (DRM)
+d! /dev/dri 0755 0 1003 -
+c! /dev/dri/card0 0666 0 1003 - 226:0
+c! /dev/dri/renderD128 0666 0 1003 - 226:128
+# Audio dir
+d! /dev/snd 0755 1000 1005 -
+# Input dir
+d! /dev/input 0755 0 1007 -
+# Android GPU/memory
+c! /dev/kgsl-3d0 0666 1000 1000 - 237:0
+c! /dev/ion 0664 1000 1000 - 10:62
+# Core
+c! /dev/fuse 0600 0 0 - 10:229
+c! /dev/ashmem 0666 0 0 - 10:58
+c! /dev/loop-control 0600 0 0 - 10:237
+EOF
 
-# GPU/Direct Rendering (DRM)
-d!     /dev/dri            0755 root graphics  -   -
-c!     /dev/dri/card0      0666 root graphics  -   226:0
-c!     /dev/dri/renderD128 0666 root graphics  -   226:128
-
-# Android sound directory
-d!     /dev/snd            0755 1000 1005      -   -
-
-# Android Graphics/Memory
-c!     /dev/kgsl-3d0       0666 1000 1000      -   237:0
-c!     /dev/ion            0664 1000 1000      -   10:62
-
-# Other essentials
-c!     /dev/fuse           0600 root root      -   10:229
-c!     /dev/ashmem         0666 root root      -   10:58
-c!     /dev/loop-control   0600 root root      -   10:237'
-
-# ফাইলটি নতুন করে তৈরি করা
-echo "${required_configuration}" > "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
-
-# ২. Loop Device যোগ করা
+# ---------------- LOOP DEVICES ----------------
 for i in $(seq 0 255); do
-  echo "b!     /dev/loop${i}  0660 root disk  -   7:${i}" >> "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
+  echo "b! /dev/loop${i} 0660 0 6 - 7:${i}" >> "$TMPFILE"
 done
 
-# ৩. Android Sound ডিভাইসগুলো (dynamic) যোগ করা
-if [ -d "/dev/snd" ]; then
+# ---------------- SOUND DEVICES ----------------
+if [ -d /dev/snd ]; then
   for snd_dev in /dev/snd/*; do
     [ -e "$snd_dev" ] || continue
-    dev_name=$(basename "$snd_dev")
+
+    name=$(basename "$snd_dev")
     dev_info=$(stat -c "%t:%T" "$snd_dev")
     major=$((0x${dev_info%:*}))
     minor=$((0x${dev_info#*:}))
-    echo "c!     /dev/snd/${dev_name}  0660 1000 1005  -   ${major}:${minor}" >> "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
+
+    echo "c! /dev/snd/${name} 0660 1000 1005 - ${major}:${minor}" >> "$TMPFILE"
   done
 fi
 
-# ৪. Input Device (Keyboard/Mouse) যোগ করা
-if [ -d "/dev/input" ]; then
-  echo "d!     /dev/input          0755 root input  -   -" >> "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
+# ---------------- INPUT DEVICES ----------------
+if [ -d /dev/input ]; then
   for input_dev in /dev/input/event*; do
     [ -e "$input_dev" ] || continue
-    dev_name=$(basename "$input_dev")
+
+    name=$(basename "$input_dev")
     dev_info=$(stat -c "%t:%T" "$input_dev")
     major=$((0x${dev_info%:*}))
     minor=$((0x${dev_info#*:}))
-    echo "c!     /dev/input/${dev_name}  0660 1000 input  -   ${major}:${minor}" >> "${LXC_ROOTFS_PATH}/etc/tmpfiles.d/required.lxc-setup.conf"
+
+    echo "c! /dev/input/${name} 0660 1000 1007 - ${major}:${minor}" >> "$TMPFILE"
   done
 fi
 
+# ---------------- AUTO باقي /dev ----------------
+for dev in /dev/*; do
+  [ -e "$dev" ] || continue
+
+  name=$(basename "$dev")
+
+  # already handled skip
+  case "$name" in
+    dri|snd|input|pts|shm|fd|stdin|stdout|stderr|console)
+      continue
+    ;;
+  esac
+
+  if [ -c "$dev" ] || [ -b "$dev" ]; then
+    dev_info=$(stat -c "%t:%T" "$dev")
+    major=$((0x${dev_info%:*}))
+    minor=$((0x${dev_info#*:}))
+
+    perms=$(stat -c "%a" "$dev")
+    uid=$(stat -c "%u" "$dev")
+    gid=$(stat -c "%g" "$dev")
+
+    type="c"
+    [ -b "$dev" ] && type="b"
+
+    echo "$type! /dev/${name} ${perms} ${uid} ${gid} - ${major}:${minor}" >> "$TMPFILE"
+  fi
+done
 
 
 
