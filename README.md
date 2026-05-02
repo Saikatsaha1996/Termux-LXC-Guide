@@ -111,6 +111,8 @@ sudo lxc-attach -n ubuntu --clear-env -q -- usr/bin/bash -c "echo Hello World"
 
 #### Delete a container -
 ```
+sudo lxc-attach -n ubuntu -e --clear-env -- /usr/bin/env -i TERM=$TERM PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash
+
 sudo lxc-destroy -n ubuntu
 ```
 <br>
